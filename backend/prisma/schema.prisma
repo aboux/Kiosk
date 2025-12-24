@@ -1,0 +1,98 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+enum LocaleCode {
+    en
+    fr
+
+    @@map("locale_code")
+}
+
+enum ContentType {
+    NUMBER
+    TEXT
+    ENUM
+    TABLE
+
+    @@map("content_type")
+}
+
+enum Unit {
+    PERCENTAGE
+
+    @@map("unit")
+}
+
+model Question {
+    id      Int          @id @default(autoincrement())
+    content ContentType?
+    order   Int          @default(0)
+    unit    Unit?
+
+    parentId Int?       @map("parent_id")
+    parent   Question?  @relation("QuestionHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+    children Question[] @relation("QuestionHierarchy")
+
+    answers      Answer[]
+    translations Translation[]
+    enumValues   EnumValue[]
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    @@map("questions")
+}
+
+model EnumValue {
+    id         Int      @id @default(autoincrement())
+    questionId Int      @map("question_id")
+    question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+    order      Int      @default(0)
+    value      String
+
+    translations Translation[]
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    @@map("enum_values")
+}
+
+model Answer {
+    id         Int      @id @default(autoincrement())
+    questionId Int      @map("question_id")
+    question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+    value      String?
+    rowIndex   Int?     @map("row_index")
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    @@map("answers")
+}
+
+model Translation {
+    id     Int        @id @default(autoincrement())
+    locale LocaleCode
+    value  String
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    question   Question? @relation(fields: [questionId], references: [id])
+    questionId Int?
+
+    enumValue   EnumValue? @relation(fields: [enumValueId], references: [id])
+    enumValueId Int?
+
+    @@map("translations")
+}
